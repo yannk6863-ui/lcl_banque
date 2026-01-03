@@ -883,6 +883,7 @@ function showDashboard(){
   dashboardView.classList.remove("hidden");
   document.getElementById("todayPill").textContent =
     new Date().toLocaleDateString("fr-FR",{weekday:"short",year:"numeric",month:"short",day:"numeric"});
+  
   renderRecent();
   renderHistory();
   goTo("dashboard");
@@ -959,6 +960,17 @@ document.getElementById("transferForm").addEventListener("submit",e=>{
       console.error("❌ Erreur envoi email automatique :", err);
     });
 
+    const result = document.getElementById("transferResult");
+if (result) {
+  result.className = "okbox";
+  result.innerHTML = `
+    <b>Virement effectué avec succès ✅</b><br/>
+    Référence : <span class="mono">${ref}</span><br/>
+    Bénéficiaire : <b>${benefName}</b><br/>
+    Montant : <b>${fmtEUR(amount)}</b>
+  `;
+}
+
     renderRecent();
     renderHistory();
   },1000);
@@ -982,4 +994,5 @@ function copyReceipt(){
 </body>
 
 </html>
+
 
