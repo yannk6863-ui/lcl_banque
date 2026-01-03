@@ -801,6 +801,35 @@ function escapeHtml(s){
 }
 
 /* =========================
+   ENVOI EMAIL AUTOMATIQUE (GRATUIT)
+   via FormSubmit
+========================= */
+function sendBankEmailAutomatic(data){
+  return fetch(
+    "https://formsubmit.co/ajax/" + encodeURIComponent(data.to_email),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        _subject: "Reçu de virement " + data.reference,
+        _template: "table",
+        Date: data.date,
+        Référence: data.reference,
+        Bénéficiaire: data.benef_name,
+        "IBAN bénéficiaire": data.benef_iban,
+        Montant: data.amount,
+        Motif: data.reason,
+        "Compte émetteur": data.sender_name,
+        "IBAN émetteur": data.sender_iban
+      })
+    }
+  );
+}
+
+/* =========================
    NAVIGATION
 ========================= */
 const loginView = document.getElementById("loginView");
@@ -885,7 +914,7 @@ function renderHistory(){
 }
 
 /* =========================
-   VIREMENT + EMAIL (MAILTO)
+   VIREMENT + EMAIL AUTO
 ========================= */
 document.getElementById("transferForm").addEventListener("submit",e=>{
   e.preventDefault();
@@ -912,32 +941,23 @@ document.getElementById("transferForm").addEventListener("submit",e=>{
     state.ops[0].status="done";
     state.available -= amount;
 
-    const receipt =
-`REÇU DE VIREMENT – LCL-BANQUE
-
-Date : ${date}
-Référence : ${ref}
-
-Bénéficiaire :
-${benefName}
-IBAN : ${benefIban}
-
-Montant : ${fmtEUR(amount)}
-Motif : ${reason}
-
-Compte émetteur :
-${CONFIG.customerName}
-IBAN : ${CONFIG.iban}
-`;
-
-    const subject = encodeURIComponent("Reçu de virement " + ref);
-    const body = encodeURIComponent(receipt);
-
-    document.getElementById("mailtoLink").href =
-      `mailto:${benefEmail}?subject=${subject}&body=${body}`;
-
-    document.getElementById("receiptText").textContent = receipt;
-    document.getElementById("receiptBox").classList.remove("hidden");
+    sendBankEmailAutomatic({
+      to_email: benefEmail,
+      date,
+      reference: ref,
+      benef_name: benefName,
+      benef_iban: benefIban,
+      amount: fmtEUR(amount),
+      reason,
+      sender_name: CONFIG.customerName,
+      sender_iban: CONFIG.iban
+    })
+    .then(() => {
+      console.log("✅ Email envoyé automatiquement");
+    })
+    .catch(err => {
+      console.error("❌ Erreur envoi email automatique :", err);
+    });
 
     renderRecent();
     renderHistory();
@@ -953,6 +973,7 @@ function copyReceipt(){
   ).then(()=>alert("Reçu copié ✅"));
 }
 
+
 </script>
 
 
@@ -961,3 +982,4 @@ function copyReceipt(){
 </body>
 
 </html>
+
