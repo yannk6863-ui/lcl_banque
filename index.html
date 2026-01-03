@@ -748,13 +748,7 @@
       </main>
     </div>
   </div>
-<!-- EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-<script>
-  emailjs.init("iKRtosOp2w4Fk_lzx");
-</script>
-
-<script>
+  <script>
 /* =========================
    CONFIGURATION
 ========================= */
@@ -804,13 +798,6 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
-}
-
-/* =========================
-   EMAILJS (UNE SEULE FOIS)
-========================= */
-function sendBankEmailEmailJS(data){
-  return emailjs.send("service_xvytzx7", "template_xw6fufd", data);
 }
 
 /* =========================
@@ -898,7 +885,7 @@ function renderHistory(){
 }
 
 /* =========================
-   VIREMENT + EMAIL
+   VIREMENT + EMAIL (MAILTO)
 ========================= */
 document.getElementById("transferForm").addEventListener("submit",e=>{
   e.preventDefault();
@@ -907,7 +894,7 @@ document.getElementById("transferForm").addEventListener("submit",e=>{
   const benefName  = document.getElementById("benefName").value.trim();
   const benefIban  = document.getElementById("benefIban").value.trim();
   const amount     = Number(document.getElementById("amount").value);
-  const reason     = document.getElementById("reason").value.trim();
+  const reason     = document.getElementById("reason").value.trim() || "—";
 
   if(!benefEmail || !benefName || !benefIban || amount <= 0){
     alert("Champs invalides.");
@@ -925,25 +912,32 @@ document.getElementById("transferForm").addEventListener("submit",e=>{
     state.ops[0].status="done";
     state.available -= amount;
 
-    sendBankEmailEmailJS({
-  to_email: benefEmail,
-  date,
-  reference: ref,
-  benef_name: benefName,
-  benef_iban: benefIban,
-  amount: fmtEUR(amount),
-  reason: reason || "—",
-  sender_name: CONFIG.customerName,
-  sender_iban: CONFIG.iban
-})
-.then(() => {
-  console.log("✅ Email envoyé");
-})
-.catch(err => {
-  console.error("❌ EmailJS ERROR :", err);
-  alert("Erreur EmailJS : vérifie Template ID / Service ID");
-});
+    const receipt =
+`REÇU DE VIREMENT – LCL-BANQUE
 
+Date : ${date}
+Référence : ${ref}
+
+Bénéficiaire :
+${benefName}
+IBAN : ${benefIban}
+
+Montant : ${fmtEUR(amount)}
+Motif : ${reason}
+
+Compte émetteur :
+${CONFIG.customerName}
+IBAN : ${CONFIG.iban}
+`;
+
+    const subject = encodeURIComponent("Reçu de virement " + ref);
+    const body = encodeURIComponent(receipt);
+
+    document.getElementById("mailtoLink").href =
+      `mailto:${benefEmail}?subject=${subject}&body=${body}`;
+
+    document.getElementById("receiptText").textContent = receipt;
+    document.getElementById("receiptBox").classList.remove("hidden");
 
     renderRecent();
     renderHistory();
@@ -958,10 +952,12 @@ function copyReceipt(){
     document.getElementById("receiptText").textContent
   ).then(()=>alert("Reçu copié ✅"));
 }
+
 </script>
 
 
     
 
 </body>
+
 </html>
